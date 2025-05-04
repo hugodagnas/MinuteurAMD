@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#003366">
+  <title>Minuteur AMD</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background-color: #faf0e6;
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #timer {
+      color: #003366; /* Bleu foncé */
+      font-size: 35vw;
+      line-height: 1;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    #controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+      opacity: 0.7;
+    }
+
+    button {
+      padding: 8px 12px;
+      font-size: 0.9em;
+      background-color: transparent;
+      color: #444;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      color: #003366;
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    button:active {
+      background-color: #f0f0f0;
+    }
+
+    .notification {
+      position: absolute;
+      top: 20px;
+      background-color: #003366;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+      z-index: 2;
+    }
+
+    #launchButton {
+      padding: 20px 40px;
+      font-size: 2em;
+      background-color: #003366;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    
+    #launchButton:hover {
+      background-color: #1E3D58;
+    }
+  </style>
+</head>
+<body>
+  <div id="launchButton">Lancement</div>
+  
+  <div id="timer" style="display: none;">02:00</div>
+  <div id="controls" style="display: none;">
+    <button id="resume">Reprendre</button>
+    <button id="pause">Pause</button>
+    <button id="restart">Recommencer</button>
+  </div>
+  <div class="notification" id="notification">Temps écoulé !</div>
+
+  <audio id="AP_Minuteur_1min30">
+    <source src="AP_Minuteur_1min30.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_1min">
+    <source src="AP_Minuteur_1min.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_30">
+    <source src="AP_Minuteur_30.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_15">
+    <source src="AP_Minuteur_15.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_Analyse">
+    <source src="AP_Minuteur_Analyse.mp3" type="audio/mp3">
+  </audio>
+
+  <script>
+    const timerDisplay = document.getElementById('timer');
+    const resumeButton = document.getElementById('resume');
+    const pauseButton = document.getElementById('pause');
+    const restartButton = document.getElementById('restart');
+    const notification = document.getElementById('notification');
+    const launchButton = document.getElementById('launchButton');
+    let timer;
+    let isPaused = false;
+    let timeRemaining = 120; // 2 minutes en secondes
+
+    let lastSpokenTime = 120;
+
+    const speak = (message) => {
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.lang = 'fr-FR'; 
+      utterance.rate = 1.1;      
+      utterance.pitch = 1.3;     
+      window.speechSynthesis.speak(utterance);
+    };
+
+    function startTimer(duration) {
+      timeRemaining = duration;
+      clearInterval(timer);
+      updateTimerDisplay();
+
+      timer = setInterval(() => {
+        if (!isPaused) {
+          timeRemaining--;
+          updateTimerDisplay();
+          checkAlerts(timeRemaining);
+
+          if (timeRemaining <= 0) {
+            clearInterval(timer);
+            notification.style.display = 'block';
+            document.getElementById('AP_Minuteur_Analyse').play();
+          }
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+      const seconds = (timeRemaining % 60).toString().padStart(2, '0');
+      const newTime = `${minutes}:${seconds}`;
+      timerDisplay.textContent = newTime;
+    }
+
+    function checkAlerts(timeRemaining) {
+      if (timeRemaining === 90 && lastSpokenTime !== 90) {
+        document.getElementById('AP_Minuteur_1min30').play();
+        lastSpokenTime = 90;
+      } else if (timeRemaining === 60 && lastSpokenTime !== 60) {
+        document.getElementById('AP_Minuteur_1min').play();
+        lastSpokenTime = 60;
+      } else if (timeRemaining === 30 && lastSpokenTime !== 30) {
+        document.getElementById('AP_Minuteur_30').play();
+        lastSpokenTime = 30;
+      } else if (timeRemaining === 15 && lastSpokenTime !== 15) {
+        document.getElementById('AP_Minuteur_15').play();
+        lastSpokenTime = 15;
+      }
+    }
+
+    launchButton.addEventListener('click', () => {
+      launchButton.style.display = 'none';
+      timerDisplay.style.display = 'block';
+      document.getElementById('controls').style.display = 'flex';
+      startTimer(120); 
+    });
+
+    resumeButton.addEventListener('click', () => {
+      if (timeRemaining > 0) {
+        notification.style.display = 'none';
+        isPaused = false;
+      }
+    });
+
+    pauseButton.addEventListener('click', () => {
+      isPaused = true;
+    });
+
+    restartButton.addEventListener('click', () => {
+      isPaused = false;
+      notification.style.display = 'none';
+      startTimer(120); 
+    });
+  </script>
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("Service worker enregistré"))
+        .catch(err => console.error("Erreur SW:", err));
+    }
+  </script>
+</body>
+</html>
