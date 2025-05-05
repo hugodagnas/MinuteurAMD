@@ -7,6 +7,7 @@
   <title>Minuteur AMD</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icon-192.png">
   <style>
     html, body {
       height: 100%;
@@ -27,11 +28,13 @@
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     }
 
-    #controls {
+    #controls, #dsaControls {
       margin-top: 20px;
       display: flex;
       gap: 15px;
       opacity: 0.7;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     button {
@@ -74,7 +77,7 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    
+
     #launchButton:hover {
       background-color: #1E3D58;
     }
@@ -84,11 +87,21 @@
   <div id="launchButton">Lancement</div>
   
   <div id="timer" style="display: none;">02:00</div>
+  
   <div id="controls" style="display: none;">
     <button id="resume">Reprendre</button>
     <button id="pause">Pause</button>
     <button id="restart">Recommencer</button>
   </div>
+
+  <!-- Nouveaux boutons DSA -->
+  <div id="dsaControls" style="display: none; margin-top: 10px; gap: 10px;">
+    <button id="miseEnPlaceDSA">Mise en place DSA</button>
+    <button id="analyseDSA">Analyse DSA</button>
+    <button id="chargementDSA">Chargement DSA</button>
+    <button id="chocDelivreDSA">Choc délivré DSA</button>
+  </div>
+
   <div class="notification" id="notification">Temps écoulé !</div>
 
   <audio id="AP_Minuteur_1min30">
@@ -106,6 +119,21 @@
   <audio id="AP_Minuteur_Analyse">
     <source src="AP_Minuteur_Analyse.mp3" type="audio/mp3">
   </audio>
+  <audio id="AP_Minuteur_MiseenplaceDSA">
+    <source src="AP_Minuteur_MiseenplaceDSA.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_ChargementDSA">
+    <source src="AP_Minuteur_ChargementDSA.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_AppuyerDSA">
+    <source src="AP_Minuteur_AppuyerDSA.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_ChocDelivre">
+    <source src="AP_Minuteur_ChocDelivre.mp3" type="audio/mp3">
+  </audio>
+  <audio id="AP_Minuteur_RepriseMCE">
+    <source src="AP_Minuteur_RepriseMCE.mp3" type="audio/mp3">
+  </audio>
 
   <script>
     const timerDisplay = document.getElementById('timer');
@@ -114,6 +142,7 @@
     const restartButton = document.getElementById('restart');
     const notification = document.getElementById('notification');
     const launchButton = document.getElementById('launchButton');
+    const dsaControls = document.getElementById('dsaControls');
     let timer;
     let isPaused = false;
     let timeRemaining = 120; // 2 minutes en secondes
@@ -175,6 +204,7 @@
       launchButton.style.display = 'none';
       timerDisplay.style.display = 'block';
       document.getElementById('controls').style.display = 'flex';
+      dsaControls.style.display = 'flex'; // Affiche les boutons DSA après lancement
       startTimer(120); 
     });
 
@@ -194,6 +224,40 @@
       notification.style.display = 'none';
       startTimer(120); 
     });
+
+    // Actions des boutons DSA avec gestion de la séquentialité des sons
+    document.getElementById('miseEnPlaceDSA').addEventListener('click', () => {
+      playSequentially(['AP_Minuteur_MiseenplaceDSA', 'AP_Minuteur_MiseenplaceDSA', 'AP_Minuteur_MiseenplaceDSA']);
+    });
+
+    document.getElementById('analyseDSA').addEventListener('click', () => {
+      playSequentially(['AP_Minuteur_Analyse']);
+    });
+
+    document.getElementById('chargementDSA').addEventListener('click', () => {
+      playSequentially(['AP_Minuteur_ChargementDSA', 'AP_Minuteur_ChargementDSA', 'AP_Minuteur_AppuyerDSA']);
+    });
+
+    document.getElementById('chocDelivreDSA').addEventListener('click', () => {
+      playSequentially(['AP_Minuteur_ChocDelivre', 'AP_Minuteur_RepriseMCE']);
+    });
+
+    function playSequentially(ids) {
+      let index = 0;
+
+      function playNext() {
+        if (index < ids.length) {
+          const audio = document.getElementById(ids[index]);
+          audio.play();
+          audio.onended = () => {
+            index++;
+            playNext();
+          };
+        }
+      }
+
+      playNext();
+    }
   </script>
 
   <!-- Service Worker -->
